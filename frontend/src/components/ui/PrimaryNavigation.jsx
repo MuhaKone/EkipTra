@@ -40,6 +40,13 @@ const PrimaryNavigation = ({ isCollapsed = false, isOpen = false, onClose, userR
       path: '/reports-analytics',
       icon: 'BarChart3',
       roles: ['Administrateur', 'Gestionnaire HSE', 'Technicien']
+    },
+    {
+      id: 'settings',
+      label: 'Paramètres',
+      path: '/settings',
+      icon: 'Settings',
+      roles: ['Administrateur', 'Gestionnaire HSE']
     }
   ];
 

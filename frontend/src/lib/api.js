@@ -126,58 +126,59 @@ class ApiClient {
 const apiClient = new ApiClient();
 
 export const api = {
+  auth: {
+    login: (username, password) => apiClient.post('/auth/login', { username, password }, { queueable: false }),
+    logout: () => apiClient.post('/auth/logout', {}, { queueable: false }),
+    me: () => apiClient.get('/auth/me', {}, { queueable: false }),
+  },
+
   equipment: {
-    getAll: () => apiClient.get('/equipment'),
-    getById: (id) => apiClient.get(`/equipment/${id}`),
-    create: (data) => apiClient.post('/equipment', data, {
+    getAll: (params = {}) => apiClient.get('/equipments', params),
+    getById: (id) => apiClient.get(`/equipments/${id}`),
+    create: (data) => apiClient.post('/equipments', data, {
       operationType: OPERATION_TYPES.CREATE_EQUIPMENT,
     }),
-    update: (id, data) => apiClient.put(`/equipment/${id}`, data, {
+    update: (id, data) => apiClient.put(`/equipments/${id}`, data, {
       operationType: OPERATION_TYPES.UPDATE_EQUIPMENT,
     }),
-    delete: (id) => apiClient.delete(`/equipment/${id}`, {
+    delete: (id) => apiClient.delete(`/equipments/${id}`, {
       operationType: OPERATION_TYPES.DELETE_EQUIPMENT,
       data: { id },
     }),
   },
 
   checkout: {
-    create: (data) => apiClient.post('/checkout', data, {
+    create: (data) => apiClient.post('/checkouts', data, {
       operationType: OPERATION_TYPES.CHECKOUT,
     }),
-    return: (checkoutId, data) => apiClient.post(`/checkout/${checkoutId}/return`, data, {
+    return: (checkoutId, data) => apiClient.post(`/checkouts/${checkoutId}/return`, data, {
       operationType: OPERATION_TYPES.RETURN,
     }),
-    getHistory: (params = {}) => apiClient.get('/checkout/history', params),
-    getActive: () => apiClient.get('/checkout/active'),
+    getOverdues: () => apiClient.get('/checkouts/overdues'),
   },
 
   maintenance: {
-    getAll: (params = {}) => apiClient.get('/maintenance', params),
-    getById: (id) => apiClient.get(`/maintenance/${id}`),
-    create: (data) => apiClient.post('/maintenance', data, {
+    getAll: (params = {}) => apiClient.get('/maintenances', params),
+    create: (data) => apiClient.post('/maintenances', data, {
       operationType: OPERATION_TYPES.CREATE_MAINTENANCE,
     }),
-    update: (id, data) => apiClient.put(`/maintenance/${id}`, data, {
-      operationType: OPERATION_TYPES.UPDATE_MAINTENANCE,
-    }),
-    complete: (id, data) => apiClient.post(`/maintenance/${id}/complete`, data, {
+    update: (id, data) => apiClient.put(`/maintenances/${id}`, data, {
       operationType: OPERATION_TYPES.UPDATE_MAINTENANCE,
     }),
   },
 
   reports: {
-    inventory: (params = {}) => apiClient.get('/reports/inventory', params),
-    usage: (params = {}) => apiClient.get('/reports/usage', params),
-    maintenance: (params = {}) => apiClient.get('/reports/maintenance', params),
-    dashboard: () => apiClient.get('/reports/dashboard'),
+    utilization: () => apiClient.get('/reports/utilization'),
+    overdues: () => apiClient.get('/reports/overdues'),
+    maintenanceCosts: () => apiClient.get('/reports/maintenance-costs'),
   },
+
+  lookups: () => apiClient.get('/lookups'),
 
   health: () => apiClient.get('/health'),
 
   license: {
-    validate: (key) => apiClient.post('/license/validate', { key }, { queueable: false }),
-    info: () => apiClient.get('/license/info', {}, { queueable: false }),
+    validate: (key) => apiClient.get(`/license/validate?key=${key}`, {}, { queueable: false }),
   },
 };
 

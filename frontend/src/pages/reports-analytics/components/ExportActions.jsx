@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import { generateReportPDF, downloadBlob } from '../../../lib/export';
 
 const ExportActions = ({ onExport }) => {
   const [exportConfig, setExportConfig] = useState({
@@ -18,9 +19,11 @@ const ExportActions = ({ onExport }) => {
       costs: true
     }
   });
+  const [isExporting, setIsExporting] = useState(false);
 
   const formatOptions = [
     { value: 'pdf', label: 'PDF Report' },
+    { value: 'comprehensive-pdf', label: 'PDF Rapport Complet' },
     { value: 'excel', label: 'Excel Spreadsheet' },
     { value: 'csv', label: 'CSV Data' },
     { value: 'json', label: 'JSON Data' }
@@ -44,7 +47,77 @@ const ExportActions = ({ onExport }) => {
     }));
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    setIsExporting(true);
+    
+    try {
+      if (exportConfig.format === 'comprehensive-pdf') {
+        await generateComprehensiveReport();
+      } else {
+        onExport?.(exportConfig);
+      }
+      
+      setStatus('✅ Export terminé avec succès');
+    } catch (error) {
+      setStatus('❌ Erreur lors de l\'export');
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const generateComprehensiveReport = async () => {
+    const sections = {};
+    
+    // Mock data for demonstration
+    if (exportConfig.sections.kpis) {
+      sections.kpis = {
+        title: 'Indicateurs Clés de Performance',
+        description: 'Métriques principales du système',
+        data: [
+          { metric: 'Taux d\'utilisation moyen', valeur: '87.2%', tendance: '+2.4%' },
+          { metric: 'Coût maintenance mensuel', valeur: '24,000€', tendance: '-5.2%' },
+          { metric: 'Équipements en service', valeur: '403/425', tendance: '+12' },
+          { metric: 'Temps d\'arrêt moyen', valeur: '2.8h/mois', tendance: '-0.5h' }
+        ],
+        columns: ['metric', 'valeur', 'tendance']
+      };
+    }
+    
+    if (exportConfig.sections.utilization) {
+      sections.utilization = {
+        title: 'Analyse d\'Utilisation',
+        description: 'Taux d\'utilisation par catégorie et période',
+        data: [
+          { categorie: 'Construction', utilisation: '85%', disponible: '88%', maintenance: '12%' },
+          { categorie: 'Exploitation minière', utilisation: '92%', disponible: '82%', maintenance: '18%' },
+          { categorie: 'HSE', utilisation: '78%', disponible: '92%', maintenance: '8%' },
+          { categorie: 'Outils', utilisation: '88%', disponible: '85%', maintenance: '15%' }
+        ],
+        columns: ['categorie', 'utilisation', 'disponible', 'maintenance']
+      };
+    }
+    
+    if (exportConfig.sections.maintenance) {
+      sections.maintenance = {
+        title: 'Coûts de Maintenance',
+        description: 'Analyse des coûts préventifs et correctifs',
+        data: [
+          { mois: 'Janvier', preventif: '12,500€', correctif: '8,200€', total: '20,700€' },
+          { mois: 'Février', preventif: '11,800€', correctif: '9,500€', total: '21,300€' },
+          { mois: 'Mars', preventif: '13,200€', correctif: '7,800€', total: '21,000€' },
+          { mois: 'Avril', preventif: '12,900€', correctif: '11,200€', total: '24,100€' }
+        ],
+        columns: ['mois', 'preventif', 'correctif', 'total']
+      };
+    }
+    
+    const timestamp = new Date().toISOString().split('T')[0];
+    const blob = generateReportPDF(sections, 'Rapport Complet EquipTracker');
+    downloadBlob(blob, `rapport_complet_${timestamp}.pdf`);
+  };
+
+  const oldHandleExport = () => {
     onExport?.(exportConfig);
     
     // Simulate export process
@@ -85,10 +158,12 @@ const ExportActions = ({ onExport }) => {
               />
               
               <Select
+                loading={isExporting}
+                disabled={isExporting}
                 label="Période des données"
                 options={dateRangeOptions}
                 value={exportConfig?.dateRange}
-                onChange={(value) => setExportConfig(prev => ({ ...prev, dateRange: value }))}
+                {isExporting ? 'Export en cours...' : 'Exporter maintenant'}
               />
             </div>
           </div>

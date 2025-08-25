@@ -1,6 +1,8 @@
 // src/components/ExportActions.jsx
 import React from 'react';
-import { toCSV, downloadBlob, downloadPDF } from '../lib/export';
+import { toCSV, downloadBlob, downloadPDF, generateReportPDF } from '../lib/export';
+import Icon from './AppIcon';
+import Button from './ui/Button';
 
 /**
  * Generic export action buttons
@@ -8,33 +10,69 @@ import { toCSV, downloadBlob, downloadPDF } from '../lib/export';
  * @param {Array<{key,label}>|Array<string>} columns
  * @param {string} filenameBase
  * @param {Object} meta optional metadata to print on PDF
+ * @param {Object} reportSections optional sections for comprehensive PDF report
  */
-const ExportActions = ({ data = [], columns = [], filenameBase = 'export', meta = null }) => {
+const ExportActions = ({ 
+  data = [], 
+  columns = [], 
+  filenameBase = 'export', 
+  meta = null,
+  reportSections = null,
+  showReportPDF = false
+}) => {
   const onExportCSV = () => {
     const blob = toCSV(data, columns);
     downloadBlob(blob, `${filenameBase}.csv`);
   };
 
   const onExportPDF = () => {
-    downloadPDF(data, columns, `${filenameBase}.pdf`, meta);
+    const timestamp = new Date().toISOString().split('T')[0];
+    downloadPDF(data, columns, `${filenameBase}_${timestamp}.pdf`, meta);
+  };
+
+  const onExportReportPDF = () => {
+    if (reportSections) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const blob = generateReportPDF(reportSections, `Rapport ${filenameBase}`);
+      downloadBlob(blob, `rapport_${filenameBase}_${timestamp}.pdf`);
+    }
   };
 
   return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onExportCSV}
-        className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm"
+        iconName="FileSpreadsheet"
+        iconPosition="left"
+        disabled={data.length === 0}
       >
-        Export CSV
-      </button>
-      <button
-        type="button"
+        CSV
+      </Button>
+      
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onExportPDF}
-        className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm"
+        iconName="FileText"
+        iconPosition="left"
+        disabled={data.length === 0}
       >
-        Export PDF
-      </button>
+        PDF Simple
+      </Button>
+      
+      {showReportPDF && reportSections && (
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onExportReportPDF}
+          iconName="FileDown"
+          iconPosition="left"
+        >
+          Rapport PDF
+        </Button>
+      )}
     </div>
   );
 };

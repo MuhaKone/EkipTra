@@ -9,6 +9,7 @@ import Dashboard from './pages/dashboard';
 import EquipmentInventory from './pages/equipment-inventory';
 import EquipmentDetails from './pages/equipment-details';
 import ReportsAnalytics from './pages/reports-analytics';
+import SettingsPage from './pages/settings';
 
 const Routes = () => {
   return (
@@ -24,6 +25,7 @@ const Routes = () => {
         <Route path="/equipment-inventory" element={<EquipmentInventory />} />
         <Route path="/equipment-details" element={<EquipmentDetails />} />
         <Route path="/reports-analytics" element={<ReportsAnalytics />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>

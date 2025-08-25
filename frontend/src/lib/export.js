@@ -1,14 +1,7 @@
 // src/lib/export.js
 // Utilities for exporting data (CSV, JSON, PDF)
 import { jsPDF } from "jspdf";
-// Lazy require if available; if not, we fall back to a minimal table
-let autoTable;
-try {
-  // eslint-disable-next-line global-require
-  autoTable = require("jspdf-autotable");
-} catch (e) {
-  autoTable = null;
-}
+import autoTable from "jspdf-autotable";
 
 /**
  * Normalize columns input
@@ -48,19 +41,30 @@ export function downloadBlob(blob, filename) {
  * Generate a PDF with optional title and table of data.
  * @param {Array<Object>} rows
  * @param {Array<{key:string,label:string}>|Array<string>} columns
- * @param {string} title
+ * @param {string} filename
  * @param {Object} meta Optional metadata (e.g., filters, date range)
- * @returns {Blob}
  */
-export function toPDF(rows = [], columns = [], title = "Export PDF", meta = null) {
+export function toPDF(rows = [], columns = [], filename = "Export PDF", meta = null) {
   const doc = new jsPDF({ unit: "pt" }); // pt for predictable sizes
   const marginX = 40;
   const lineHeight = 20;
   let y = 40;
 
+  // Add company header
+  doc.setFontSize(20);
+  doc.setFont(undefined, 'bold');
+  doc.text("EquipTracker Local", marginX, y);
+  y += lineHeight + 10;
+  
   // Header
   doc.setFontSize(16);
-  doc.text(title, marginX, y);
+  doc.setFont(undefined, 'normal');
+  doc.text(filename, marginX, y);
+  y += lineHeight;
+  
+  // Date
+  doc.setFontSize(10);
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, marginX, y);
   y += lineHeight;
 
   // Meta info
@@ -77,37 +81,41 @@ export function toPDF(rows = [], columns = [], title = "Export PDF", meta = null
   // Table
   const cols = normalizeColumns(columns, rows?.[0] || {});
 
-  if (autoTable) {
-    const head = [cols.map((c) => c.label || c.key)];
-    const body = (rows || []).map((r) => cols.map((c) => String(r?.[c.key] ?? "")));
-    autoTable.default(doc, {
-      startY: y,
-      head,
-      body,
-      styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
-      headStyles: { fillColor: [245, 245, 245] },
-      margin: { left: marginX, right: marginX },
-    });
-  } else {
-    // Minimal fallback table without autotable plugin
-    doc.setFontSize(10);
-    const colWidth = 520 / Math.max(1, cols.length);
-    // header
-    cols.forEach((c, i) => {
-      doc.text(String(c.label || c.key), marginX + i * colWidth, y);
-    });
-    y += 14;
-    (rows || []).forEach((r, idx) => {
-      cols.forEach((c, i) => {
-        const val = String(r?.[c.key] ?? "");
-        doc.text(val, marginX + i * colWidth, y);
-      });
-      y += 12;
-      if (y > 760) {
-        doc.addPage();
-        y = 40;
-      }
-    });
+  const head = [cols.map((c) => c.label || c.key)];
+  const body = (rows || []).map((r) => cols.map((c) => String(r?.[c.key] ?? "")));
+  
+  doc.autoTable({
+    startY: y,
+    head,
+    body,
+    styles: { 
+      fontSize: 9, 
+      cellPadding: 4, 
+      overflow: "linebreak",
+      font: "helvetica"
+    },
+    headStyles: { 
+      fillColor: [30, 58, 138], // Primary blue
+      textColor: [255, 255, 255],
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252] // Light gray
+    },
+    margin: { left: marginX, right: marginX },
+    theme: 'grid'
+  });
+  
+  // Add footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(
+      `Page ${i} sur ${pageCount} - EquipTracker Local`,
+      marginX,
+      doc.internal.pageSize.height - 20
+    );
   }
 
   const blob = doc.output("blob");
@@ -117,11 +125,97 @@ export function toPDF(rows = [], columns = [], title = "Export PDF", meta = null
 /**
  * Helper to trigger a file download for PDF.
  */
-export function downloadPDF(rows, columns, title = "export.pdf", meta = null) {
-  const blob = toPDF(rows, columns, title, meta);
-  downloadBlob(blob, typeof title === "string" && title.endsWith(".pdf") ? title : "export.pdf");
+export function downloadPDF(rows, columns, filename = "export.pdf", meta = null) {
+  const blob = toPDF(rows, columns, filename, meta);
+  const finalFilename = typeof filename === "string" && filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+  downloadBlob(blob, finalFilename);
+}
+
+/**
+ * Generate a comprehensive report PDF with multiple sections
+ */
+export function generateReportPDF(sections = {}, title = "Rapport EquipTracker") {
+  const doc = new jsPDF({ unit: "pt" });
+  const marginX = 40;
+  let y = 40;
+  
+  // Title page
+  doc.setFontSize(24);
+  doc.setFont(undefined, 'bold');
+  doc.text("EquipTracker Local", marginX, y);
+  y += 40;
+  
+  doc.setFontSize(18);
+  doc.text(title, marginX, y);
+  y += 30;
+  
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'normal');
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, marginX, y);
+  y += 60;
+  
+  // Table of contents
+  if (Object.keys(sections).length > 1) {
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text("Table des matières", marginX, y);
+    y += 30;
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    Object.keys(sections).forEach((sectionKey, index) => {
+      doc.text(`${index + 1}. ${sections[sectionKey].title}`, marginX + 20, y);
+      y += 20;
+    });
+    
+    doc.addPage();
+    y = 40;
+  }
+  
+  // Generate sections
+  Object.entries(sections).forEach(([key, section], index) => {
+    if (index > 0) {
+      doc.addPage();
+      y = 40;
+    }
+    
+    // Section title
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text(section.title, marginX, y);
+    y += 30;
+    
+    // Section description
+    if (section.description) {
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(section.description, marginX, y);
+      y += 20;
+    }
+    
+    // Section data
+    if (section.data && section.columns) {
+      const cols = normalizeColumns(section.columns, section.data[0] || {});
+      const head = [cols.map((c) => c.label || c.key)];
+      const body = section.data.map((r) => cols.map((c) => String(r?.[c.key] ?? "")));
+      
+      doc.autoTable({
+        startY: y,
+        head,
+        body,
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255] },
+        margin: { left: marginX, right: marginX },
+        theme: 'grid'
+      });
+      
+      y = doc.lastAutoTable.finalY + 20;
+    }
+  });
+  
+  return doc.output("blob");
 }
 
 // Backwards compatibility named export
-const exportApi = { toCSV, toPDF, downloadCSV: downloadBlob, downloadPDF, downloadBlob };
+const exportApi = { toCSV, toPDF, downloadCSV: downloadBlob, downloadPDF, downloadBlob, generateReportPDF };
 export default exportApi;

@@ -10,6 +10,7 @@ import checkoutsRoutes from './routes/checkouts.routes.js';
 import maintenancesRoutes from './routes/maintenances.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import lookupsRoutes from './routes/lookups.routes.js';
+import licenseRoutes from './routes/license.routes.js';
 
 const app = express();
 
@@ -31,5 +32,6 @@ app.use('/api/checkouts', checkoutsRoutes);
 app.use('/api/maintenances', maintenancesRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/lookups', lookupsRoutes);
+app.use('/api/license', licenseRoutes);
 
 export default app;
