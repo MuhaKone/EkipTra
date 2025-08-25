@@ -6,6 +6,7 @@ import 'dotenv/config';
 
 import authRoutes from './routes/auth.routes.js';
 import equipmentsRoutes from './routes/equipments.routes.js';
+import licenseRoutes from "./routes/license.routes.js";
 import checkoutsRoutes from './routes/checkouts.routes.js';
 import maintenancesRoutes from './routes/maintenances.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
@@ -24,7 +25,7 @@ app.use(session({
 }));
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
-
+app.use("/api/license", licenseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/equipments', equipmentsRoutes);
 app.use('/api/checkouts', checkoutsRoutes);
